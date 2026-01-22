@@ -1,28 +1,53 @@
-module Sandpile (initSandpile, stepSandpile) where
+module Sandpile where
 
-import qualified Data.Vector as V
-import qualified Data.Vector.Unboxed as U
+import Sandpile.Format
+import Sandpile.Utils
+import Sandpile.Data
+
 import Data.Int (Int64)
 
-data SandpileMeta = SandpileMeta {
-  size :: Int,
-  step :: Int,
-  isTerminated :: Bool
-} deriving (Show)
+getSize :: Sandpile -> Int
+getSize = size
 
-data Sandpile = Sandpile {
-  meta :: SandpileMeta,
-  grid :: V.Vector (U.Vector Int64)
-} deriving (Show)
+getStep :: Sandpile -> Int
+getStep = step
 
-zeroGrid :: (U.Unbox a, Num a) => Int -> V.Vector (U.Vector a)
-zeroGrid n = V.generate n (\_ -> U.replicate n 0)
+isTerminated :: Sandpile -> Bool
+isTerminated = terminated
 
+printSandpile :: Sandpile -> IO ()
+printSandpile = putStrLn . pileToString
+
+-- Sandpile of size dim with a grid of values in the initState list
+-- If a cell (i, j) is not preset in the list it initializes to zero
 initSandpile :: (Int, [(Int, Int, Int64)]) -> Sandpile
-initSandpile (dim, initState) = Sandpile{
-  meta = SandpileMeta{size = dim, step = 0, isTerminated = False},
-  grid = foldl (\arr (i, j, v) -> arr V.// [(i, (arr V.! i) U.// [(j, v)])]) (zeroGrid dim) initState
-}
+initSandpile (dim, initState) = foldl withNewCellValue (zeroSandpile dim) initState
 
-stepSandpile :: IO ()
-stepSandpile = putStrLn "Not yet implemented"
+-- Progress one step in the sandpile simulation
+stepSandpile :: Sandpile -> Sandpile
+stepSandpile pile =
+  if isTerminated pile
+    then pile
+    else
+      let n = size pile
+       in checkTermination (incrementStep (foldl stepCell pile [(i, j) | i <- [0 .. n - 1], j <- [0 .. n - 1]]))
+
+-- Progress n steps in the sandpile simulation
+stepN :: (Eq t, Num t) => Sandpile -> t -> Sandpile
+stepN pile 1 = stepSandpile pile
+stepN pile n = stepN (stepSandpile pile) (n - 1)
+
+-- Progress until simulation terminates
+stepUntilTermination :: Sandpile -> Sandpile
+stepUntilTermination pile =
+  if isTerminated pile
+    then pile
+    else stepUntilTermination (stepSandpile pile)
+
+verboseStepUntilTermination :: Int -> Sandpile -> IO Sandpile
+verboseStepUntilTermination logFreq pile =
+  let {stepHelper logFreq pile n
+         | isTerminated pile = fmap (\() -> pile) (printSandpile pile)
+         | n == 0 = printSandpile pile >>= (\() -> stepHelper logFreq (stepSandpile pile) logFreq)
+         | otherwise = stepHelper logFreq (stepSandpile pile) (n - 1)}
+  in stepHelper logFreq pile logFreq

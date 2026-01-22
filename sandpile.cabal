@@ -45,17 +45,17 @@ maintainer:         brandynamado99@gmail.com
 build-type:         Simple
 
 -- Extra doc files to be distributed with the package, such as a CHANGELOG or a README.
-extra-doc-files:    CHANGELOG.md
+extra-doc-files:    README.md
 
 -- Extra source files to be distributed with the package, such as examples, or a tutorial module.
 -- extra-source-files:
 
-common warnings
-    ghc-options: -Wall
+common compiler-flags
+    ghc-options: -W -O2 -threaded
 
 library
-    -- Import common warning flags.
-    import:           warnings
+    -- Import compiler flags.
+    import:           compiler-flags
 
     -- Modules exported by the library.
     exposed-modules:  Sandpile
@@ -67,8 +67,8 @@ library
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.18.3.0,
-                      vector
+    build-depends:    base,
+                      sandpile-internal
 
     -- Directories containing source files.
     hs-source-dirs:   src
@@ -76,9 +76,35 @@ library
     -- Base language which the package is written in.
     default-language: Haskell2010
 
+library sandpile-internal
+    -- Import compiler flags.
+    import:           compiler-flags
+
+    -- Modules exported by the library.
+    exposed-modules:  Sandpile.Data,
+                      Sandpile.Utils,
+                      Sandpile.Format
+
+    -- Modules included in this library but not exported.
+    -- other-modules:
+
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
+
+    -- Other library packages from which modules are imported.
+    build-depends:    base,
+                      vector,
+                      strings
+
+    -- Directories containing source files.
+    hs-source-dirs:   src/internal
+
+    -- Base language which the package is written in.
+    default-language: Haskell2010
+
 executable sandpile
-    -- Import common warning flags.
-    import:           warnings
+    -- Import compiler flags.
+    import:           compiler-flags
 
     -- .hs or .lhs file containing the Main module.
     main-is:          Main.hs
@@ -91,7 +117,7 @@ executable sandpile
 
     -- Other library packages from which modules are imported.
     build-depends:
-        base ^>=4.18.3.0,
+        base,
         sandpile,
         split
 
@@ -102,8 +128,8 @@ executable sandpile
     default-language: Haskell2010
 
 test-suite sandpile-test
-    -- Import common warning flags.
-    import:           warnings
+    -- Import compiler flags.
+    import:           compiler-flags
 
     -- Base language which the package is written in.
     default-language: Haskell2010
@@ -121,9 +147,12 @@ test-suite sandpile-test
     hs-source-dirs:   test
 
     -- The entrypoint to the test suite.
-    main-is:          Main.hs
+    main-is:          Test.hs
 
     -- Test dependencies.
     build-depends:
-        base ^>=4.18.3.0,
-        sandpile
+        base,
+        HUnit,
+        sandpile,
+        sandpile-internal,
+        vector
