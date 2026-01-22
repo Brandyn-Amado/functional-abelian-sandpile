@@ -15,8 +15,8 @@ getStep = step
 isTerminated :: Sandpile -> Bool
 isTerminated = terminated
 
-printSandpile :: Sandpile -> IO ()
-printSandpile = putStrLn . pileToString
+printSandpile :: Bool -> Sandpile -> IO ()
+printSandpile verbose = putStrLn . (if verbose then pileToString else pileMetaToString)
 
 -- Sandpile of size dim with a grid of values in the initState list
 -- If a cell (i, j) is not preset in the list it initializes to zero
@@ -44,10 +44,11 @@ stepUntilTermination pile =
     then pile
     else stepUntilTermination (stepSandpile pile)
 
-verboseStepUntilTermination :: Int -> Sandpile -> IO Sandpile
-verboseStepUntilTermination logFreq pile =
+-- Progress until simulation terminates and print periodic progress updates
+reportProgressUntilTermination :: Bool -> Int -> Sandpile -> IO Sandpile
+reportProgressUntilTermination verbose logFreq pile =
   let {stepHelper logFreq pile n
-         | isTerminated pile = fmap (\() -> pile) (printSandpile pile)
-         | n == 0 = printSandpile pile >>= (\() -> stepHelper logFreq (stepSandpile pile) logFreq)
+         | isTerminated pile = fmap (\() -> pile) (printSandpile verbose pile)
+         | n == 0 = printSandpile verbose pile >>= (\() -> stepHelper logFreq (stepSandpile pile) logFreq)
          | otherwise = stepHelper logFreq (stepSandpile pile) (n - 1)}
   in stepHelper logFreq pile logFreq
